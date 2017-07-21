@@ -35,11 +35,14 @@ define(`PRIMME_NUM', ifdef(`USE_PETSC', `PetscScalar', ifdef(`USE_COMPLEX', `com
 
         Program primmeF77Example
 !-----------------------------------------------------------------------
-        implicit none
 ifdef(`USE_PETSC', ``#include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscpc.h>
 #include <petsc/finclude/petscmat.h>
+        use petscsys
+        use petscmat
+        use petscpc
 '')dnl
+        implicit none
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !       Pointer to the PRIMME data structure used internally by PRIMME
 !
@@ -259,10 +262,9 @@ changequote(`[',`]')
 ifdef([USE_PETSC], [
         subroutine generateLaplacian1D(n0,A,ierr)
 !       ----------------------------------------------------------------
+        use petscmat
+        use petscpc
         implicit none
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
         integer*8 n0
         PetscInt n, one, two, three
         Mat A
@@ -304,11 +306,12 @@ ifdef([USE_PETSC], [
 !       ----------------------------------------------------------------
 ifdef([USE_POINTER], [        use iso_c_binding
 ])dnl
+        use petscsys
+        use petscvec
+        use petscmat
+        use petscpc
         implicit none
         include 'primme_f77.h'
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
         integer*8 ldx,ldy
         PRIMME_NUM x(ldx,*), y(ldy,*)
         integer*8 primme
@@ -324,6 +327,8 @@ ifdef([USE_POINTER], [        Mat, pointer :: A
 ifdef([USE_POINTER], [        call primme_get_member_f77(primme, PRIMME_matrix, pA, err)
         call c_f_pointer(pA, A)
 ])
+        xvec = tVec(0)
+        yvec = tVec(0)
         call MatCreateVecs(A, xvec, yvec, ierr)
         do j=1,k
            call VecPlaceArray(xvec, x(1,j), ierr)
@@ -340,12 +345,12 @@ ifdef([USE_POINTER], [        call primme_get_member_f77(primme, PRIMME_matrix, 
 !       ----------------------------------------------------------------
 ifdef([USE_POINTER], [        use iso_c_binding
 ])dnl
+        use petscsys
+        use petscvec
+        use petscmat
+        use petscpc
         implicit none
         include 'primme_f77.h'
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
-#include <petsc/finclude/petscpc.h>
         integer*8 ldx,ldy
         PRIMME_NUM x(ldx,*), y(ldy,*)
         integer*8 primme
@@ -381,9 +386,9 @@ ifdef([USE_POINTER], [        call primme_get_member_f77(primme, PRIMME_matrix, 
         subroutine par_GlobalSum(x,y,k,primme,ierr)
 !       ----------------------------------------------------------------
         use iso_c_binding
+        use petscsys
         implicit none
         include 'primme_f77.h'
-#include <petsc/finclude/petscsys.h>
         real*8, target :: x(k), y(k)
         integer*8 primme
         integer k,ierr

@@ -34,11 +34,14 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
 
         Program primmeSvdsF77Example
 !-----------------------------------------------------------------------
-        implicit none
-        include 'primme_f77.h'
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscpc.h>
 #include <petsc/finclude/petscmat.h>
+        use petscsys
+        use petscmat
+        use petscpc
+        implicit none
+        include 'primme_f77.h'
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !       Pointer to the PRIMME SVDS data structure used internally by PRIMME
 !
@@ -240,10 +243,9 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
 
         subroutine generateLauchli(m0,n0,c,A,ierr)
 !       ----------------------------------------------------------------
+        use petscmat
+        use petscpc
         implicit none
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
         integer*8 m0, n0
         real*8 c
         PetscInt m, n, zeroi
@@ -277,11 +279,11 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
         subroutine PETScMatvec(x,ldx,y,ldy,k,transpose,primme_svds,err)
 !       ----------------------------------------------------------------
         use iso_c_binding
+        use petscvec
+        use petscmat
+        use petscpc
         implicit none
         include 'primme_f77.h'
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
         integer*8 ldx,ldy
         integer k,transpose
         PetscScalar x(ldx,*), y(ldy,*)
@@ -296,6 +298,8 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
      :                                  PRIMME_SVDS_matrix, pA, err)
         call c_f_pointer(pA, A)
 
+        xvec = tVec(0)
+        yvec = tVec(0)
 #if PETSC_VERSION_LT(3,6,0)
         call MatGetVecs(A, xvec, yvec, ierr)
 #else
@@ -324,12 +328,10 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
         subroutine ApplyPCPrecAHA(x,ldx,y,ldy,k,mode,primme_svds,err)
 !       ----------------------------------------------------------------
         use iso_c_binding
+        use petscmat
+        use petscpc
         implicit none
         include 'primme_f77.h'
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
-#include <petsc/finclude/petscpc.h>
         integer*8 ldx,ldy,mLocal,nLocal
         integer k,mode,err
         PetscScalar x(ldx,*), y(ldy,*)
@@ -352,9 +354,11 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
         call c_f_pointer(pA, A)
         call c_f_pointer(ppc, pc)
 
+        xvec = tVec(0)
+        yvec = tVec(0)
         if (mode.eq.PRIMME_SVDS_op_AtA) then
-           call MatCreateVecs(A, xvec, PETSC_NULL_OBJECT, ierr)
-           call MatCreateVecs(A, yvec, PETSC_NULL_OBJECT, ierr)
+           call MatCreateVecs(A, xvec, PETSC_NULL_VEC, ierr)
+           call MatCreateVecs(A, yvec, PETSC_NULL_VEC, ierr)
            do j=1,k
               call VecPlaceArray(xvec, x(1,j), ierr)
               call VecPlaceArray(yvec, y(1,j), ierr)
@@ -374,9 +378,9 @@ C  Contact: Andreas Stathopoulos, a n d r e a s _at_ c s . w m . e d u
         subroutine par_GlobalSum(x,y,k,primme_svds,ierr)
 !       ----------------------------------------------------------------
         use iso_c_binding
+        use petscsys
         implicit none
         include 'primme_f77.h'
-#include <petsc/finclude/petscsys.h>
         real*8, target :: x(k), y(k)
         integer*8 primme_svds
         integer k,ierr
