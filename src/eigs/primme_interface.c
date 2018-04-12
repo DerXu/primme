@@ -711,6 +711,7 @@ int primme_get_member(primme_params *primme, primme_params_label label,
       double double_v;
       FILE *file_v;
       primme_init init_v;
+      primme_orth orth_v;
       primme_projection projection_v;
       primme_restartscheme restartscheme_v;
       primme_convergencetest convergencetest_v;
@@ -824,6 +825,12 @@ int primme_get_member(primme_params *primme, primme_params_label label,
       break;
       case PRIMME_preconditioner:
               v->ptr_v = primme->preconditioner;
+      break;
+      case PRIMME_initBasisMode:
+              v->init_v = primme->initBasisMode;
+      break;
+      case PRIMME_orth:
+              v->orth_v = primme->orth;
       break;
       case PRIMME_restartingParams_scheme:
               v->restartscheme_v = primme->restartingParams.scheme;
@@ -965,6 +972,7 @@ int primme_set_member(primme_params *primme, primme_params_label label,
       double *double_v;
       FILE *file_v;
       primme_init *init_v;
+      primme_orth *orth_v;
       primme_projection *projection_v;
       primme_restartscheme *restartscheme_v;
       primme_convergencetest *convergencetest_v;
@@ -1092,6 +1100,9 @@ int primme_set_member(primme_params *primme, primme_params_label label,
       break;
       case PRIMME_initBasisMode:
               primme->initBasisMode = *v.init_v;
+      break;
+      case PRIMME_orth:
+              primme->orth = *v.orth_v;
       break;
       case PRIMME_projectionParams_projection:
               primme->projectionParams.projection = *v.projection_v;
@@ -1288,6 +1299,7 @@ int primme_member_info(primme_params_label *label_, const char** label_name_,
    IF_IS(matrix                       , matrix);
    IF_IS(preconditioner               , preconditioner);
    IF_IS(initBasisMode                , initBasisMode);
+   IF_IS(orth                         , orth);
    IF_IS(projection_projection        , projectionParams_projection);
    IF_IS(restarting_scheme            , restartingParams_scheme);
    IF_IS(restarting_maxPrevRetain     , restartingParams_maxPrevRetain);
@@ -1349,6 +1361,7 @@ int primme_member_info(primme_params_label *label_, const char** label_name_,
       case PRIMME_maxMatvecs:
       case PRIMME_maxOuterIterations:
       case PRIMME_initBasisMode:
+      case PRIMME_orth:
       case PRIMME_projectionParams_projection:
       case PRIMME_restartingParams_scheme:
       case PRIMME_restartingParams_maxPrevRetain:
@@ -1477,7 +1490,7 @@ int primme_constant_info(const char* label_name, int *value) {
    IF_IS(PRIMME_LOBPCG_OrthoBasis);
    IF_IS(PRIMME_LOBPCG_OrthoBasis_Window);
    
-   /* enum members for targeting; restarting and innertest */
+   /* enum members for targeting, restarting, orth, initBasisMode and innertest */
    
    IF_IS(primme_smallest);
    IF_IS(primme_largest);
@@ -1493,6 +1506,8 @@ int primme_constant_info(const char* label_name, int *value) {
    IF_IS(primme_init_krylov);
    IF_IS(primme_init_random);
    IF_IS(primme_init_user);
+   IF_IS(primme_orth_implicit_I);
+   IF_IS(primme_orth_explicit_I);
    IF_IS(primme_thick);
    IF_IS(primme_dtr);
    IF_IS(primme_full_LTolerance);

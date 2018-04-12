@@ -20967,6 +20967,7 @@ SWIG_init(void) {
   SWIG_Python_SetConstant(d, "PRIMME_realWork",SWIG_From_int(static_cast< int >(PRIMME_realWork)));
   SWIG_Python_SetConstant(d, "PRIMME_aNorm",SWIG_From_int(static_cast< int >(PRIMME_aNorm)));
   SWIG_Python_SetConstant(d, "PRIMME_eps",SWIG_From_int(static_cast< int >(PRIMME_eps)));
+  SWIG_Python_SetConstant(d, "PRIMME_orth",SWIG_From_int(static_cast< int >(PRIMME_orth)));
   SWIG_Python_SetConstant(d, "PRIMME_printLevel",SWIG_From_int(static_cast< int >(PRIMME_printLevel)));
   SWIG_Python_SetConstant(d, "PRIMME_outputFile",SWIG_From_int(static_cast< int >(PRIMME_outputFile)));
   SWIG_Python_SetConstant(d, "PRIMME_matrix",SWIG_From_int(static_cast< int >(PRIMME_matrix)));

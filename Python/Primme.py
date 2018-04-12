@@ -547,6 +547,7 @@ PRIMME_intWork = _Primme.PRIMME_intWork
 PRIMME_realWork = _Primme.PRIMME_realWork
 PRIMME_aNorm = _Primme.PRIMME_aNorm
 PRIMME_eps = _Primme.PRIMME_eps
+PRIMME_orth = _Primme.PRIMME_orth
 PRIMME_printLevel = _Primme.PRIMME_printLevel
 PRIMME_outputFile = _Primme.PRIMME_outputFile
 PRIMME_matrix = _Primme.PRIMME_matrix
