@@ -57,7 +57,7 @@ static int solve_H_Ref_Sprimme(SCALAR *H, int ldH, SCALAR *hVecs,
    REAL *hVals, int basisSize, int targetShiftIndex, size_t *lrwork,
    SCALAR *rwork, int liwork, int *iwork, primme_params *primme);
 
-static int solve_H_brcast_Sprimme(int basisSize, SCALAR *hU, int ldhU,
+static int solve_H_brcast_Sprimme(int ret, int basisSize, SCALAR *hU, int ldhU,
       SCALAR *hVecs, int ldhVecs, REAL *hVals, REAL *hSVals, size_t *lrwork,
       SCALAR *rwork, primme_params *primme);
 
@@ -107,6 +107,7 @@ int solve_H_Sprimme(SCALAR *H, int basisSize, int ldH, SCALAR *VtBV, int ldVtBV,
    SCALAR *rwork, int liwork, int *iwork, primme_params *primme) {
 
    int i;
+   int ret=0;
 
    /* In parallel (especially with heterogeneous processors/libraries) ensure */
    /* that every process has the same hVecs and hU. Only processor 0 solves   */
@@ -115,33 +116,34 @@ int solve_H_Sprimme(SCALAR *H, int basisSize, int ldH, SCALAR *VtBV, int ldVtBV,
    if (primme->procID == 0) {
       switch (primme->projectionParams.projection) {
          case primme_proj_RR:
-            CHKERR(solve_H_RR_Sprimme(H, ldH, VtBV, ldVtBV, hVecs, ldhVecs,
+            ret = solve_H_RR_Sprimme(H, ldH, VtBV, ldVtBV, hVecs, ldhVecs,
                      hVals, basisSize, numConverged, lrwork, rwork, liwork,
-                     iwork, primme), -1);
+                     iwork, primme);
             break;
 
          case primme_proj_harmonic:
-            CHKERR(solve_H_Harm_Sprimme(H, ldH, QtV, ldQtV, R, ldR, hVecs,
+            ret = solve_H_Harm_Sprimme(H, ldH, QtV, ldQtV, R, ldR, hVecs,
                      ldhVecs, hU, ldhU, hVals, basisSize, numConverged, machEps,
-                     lrwork, rwork, liwork, iwork, primme), -1);
+                     lrwork, rwork, liwork, iwork, primme);
             break;
 
          case primme_proj_refined:
-            CHKERR(solve_H_Ref_Sprimme(H, ldH, hVecs, ldhVecs, hU, ldhU, hSVals, 
+            ret = solve_H_Ref_Sprimme(H, ldH, hVecs, ldhVecs, hU, ldhU, hSVals, 
                      R, ldR, hVals, basisSize, numConverged, lrwork, rwork,
-                     liwork, iwork, primme), -1);
+                     liwork, iwork, primme);
             break;
 
          default:
+            ret = -1;
             assert(0);
       }
    }
 
    /* Broadcast hVecs, hU, hVals, hSVals */
 
-   CHKERR(solve_H_brcast_Sprimme(basisSize, hU, ldhU, hVecs, ldhVecs, hVals,
-            hSVals, lrwork, rwork, primme), -1);
- 
+   CHKERR(solve_H_brcast_Sprimme(ret, basisSize, hU, ldhU, hVecs, ldhVecs,
+                                 hVals, hSVals, lrwork, rwork, primme), -1);
+
    /* Return memory requirements */
 
    if (H == NULL) {
@@ -610,6 +612,7 @@ static int solve_H_Ref_Sprimme(SCALAR *H, int ldH, SCALAR *hVecs,
  * 
  * INPUT ARRAYS AND PARAMETERS
  * ---------------------------
+ * ret            Error code from the routine that solves the projected problem
  * basisSize      The dimension of hVecs, hU, hVals and hSVals
  * lrwork         Length of the work array rwork
  * primme         Structure containing various solver parameters
@@ -629,7 +632,7 @@ static int solve_H_Ref_Sprimme(SCALAR *H, int ldH, SCALAR *hVecs,
  * error code                          
  ******************************************************************************/
 
-static int solve_H_brcast_Sprimme(int basisSize, SCALAR *hU, int ldhU,
+static int solve_H_brcast_Sprimme(int ret, int basisSize, SCALAR *hU, int ldhU,
       SCALAR *hVecs, int ldhVecs, REAL *hVals, REAL *hSVals, size_t *lrwork,
       SCALAR *rwork, primme_params *primme) {
 
@@ -643,17 +646,17 @@ static int solve_H_brcast_Sprimme(int basisSize, SCALAR *hU, int ldhU,
       switch (primme->projectionParams.projection) {
          case primme_proj_RR:
             /* Broadcast hVecs, hVals */
-            *lrwork = max(*lrwork, (size_t)2*basisSize*(basisSize+1));
+            *lrwork = max(*lrwork, (size_t)2*basisSize*(basisSize+1)+2);
             break;
 
          case primme_proj_harmonic:
             /* Broadcast hVecs, hVals, hU */
-            *lrwork = max(*lrwork, (size_t)2*basisSize*(2*basisSize+1));
+            *lrwork = max(*lrwork, (size_t)2*basisSize*(2*basisSize+1)+2);
             break;
 
          case primme_proj_refined:
             /* Broadcast hVecs, hVals, hU, hSVals */
-            *lrwork = max(*lrwork, (size_t)2*basisSize*(2*basisSize+2));
+            *lrwork = max(*lrwork, (size_t)2*basisSize*(2*basisSize+2)+2);
             break;
 
          default:
@@ -661,8 +664,17 @@ static int solve_H_brcast_Sprimme(int basisSize, SCALAR *hU, int ldhU,
       }
       return 0;
    }
-   assert(*lrwork >= (size_t)2*basisSize*((hU?2:1)*basisSize + (hSVals?2:1)));
+   assert(*lrwork >= (size_t)2 * basisSize *
+                             ((hU ? 2 : 1) * basisSize + (hSVals ? 2 : 1)) +
+                         2);
 
+   /* Pack ret */
+   if (primme->procID == 0) {
+      *((REAL*)rwork0) = (REAL)ret;
+   }
+   n += 1;
+   rwork0 += 1;
+   
    /* Pack hVecs */
 
    if (primme->procID == 0) {
@@ -716,6 +728,12 @@ static int solve_H_brcast_Sprimme(int basisSize, SCALAR *hU, int ldhU,
    /* Perform the broadcast by using a reduction */
 
    CHKERR(globalSum_Sprimme(rwork, rwork0, n, primme), -1);
+
+   /* Unpack ret */
+
+   ret = (int)*((REAL*)rwork0);
+   rwork0 += 1;
+   CHKERRM(ret, -1, "Error in solving the projected problem");
 
    /* Unpack hVecs */
 

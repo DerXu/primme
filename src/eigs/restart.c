@@ -2878,17 +2878,23 @@ static int ortho_coefficient_vectors_Sprimme(SCALAR *hVecs, int basisSize,
       assert(*rworkSize >= (size_t)(*numPrevRetained)*(*numPrevRetained));
       size_t rworkSize0 = *rworkSize - (size_t)(*numPrevRetained)*(*numPrevRetained);
 
-      CHKERR(Bortho_local_Sprimme(&hVecs[ldhVecs*indexOfPreviousVecs], ldhVecs,
-               dummyR, *numPrevRetained, 0, *numPrevRetained-1,
-               hVecs, ldhVecs, indexOfPreviousVecs, basisSize, VtBV, ldVtBV,
-               primme->iseed, machEps, rwork0, &rworkSize0, NULL), -1);
+      int ret = Bortho_local_Sprimme(
+          &hVecs[ldhVecs * indexOfPreviousVecs], ldhVecs, dummyR,
+          *numPrevRetained, 0, *numPrevRetained - 1, hVecs, ldhVecs,
+          indexOfPreviousVecs, basisSize, VtBV, ldVtBV, primme->iseed, machEps,
+          rwork0, &rworkSize0, NULL);
 
-      for (i=0; i<*numPrevRetained; i++) {
-         if (REAL_PART(dummyR[(*numPrevRetained)*i+i]) == 0.0) {
-            break;
+      if (ret == 0) {
+         for (i=0; i<*numPrevRetained; i++) {
+            if (REAL_PART(dummyR[(*numPrevRetained)*i+i]) == 0.0) {
+               break;
+            }
          }
+         newNumPrevRetained = i;
       }
-      newNumPrevRetained = i;
+      else {
+         newNumPrevRetained = -1;
+      }
    }
 
    /* Broadcast hVecs(indexOfPreviousVecs:indexOfPreviousVecs+numPrevRetained) */
@@ -2908,6 +2914,7 @@ static int ortho_coefficient_vectors_Sprimme(SCALAR *hVecs, int basisSize,
    CHKERR(globalSum_Sprimme(rwork, rwork0, basisSize*(*numPrevRetained)+1,
             primme), -1);
    *numPrevRetained = (int)REAL_PART(rwork0[0]);
+   CHKERRM(*numPrevRetained < 0, -1, "Bortho_local_Sprimme failed");
    Num_copy_matrix_Sprimme(rwork0+1, basisSize, *numPrevRetained, basisSize,
          &hVecs[ldhVecs*indexOfPreviousVecs], ldhVecs);
 
