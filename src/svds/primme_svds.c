@@ -1159,7 +1159,7 @@ static void convTestFunATA(double *eval, void *evec, double *rNorm, int *isConv,
    /* Call the callback */
    
    double sval = eval ? sqrt(fabs(*eval)) : 0.0;
-   double srNorm = (rNorm&&eval) ? *rNorm/sval : 0.0;
+   double srNorm = (rNorm&&eval&&fabs(sval)!=0) ? *rNorm/sval : 0.0;
    primme_svds->convTestFun(eval?&sval:NULL,
       (method==primme_svds_op_AAt && evec) ? evec : NULL,
       (method==primme_svds_op_AtA && evec) ? evec : NULL,
@@ -1378,12 +1378,12 @@ static void monitor_single_stage(void *basisEvals_, int *basisSize, int *basisFl
 
       if (basisEvals && basisSize) for (i=0; i<*basisSize; i++) {
          basisSvals[i] = sqrt(fabs(basisEvals[i]));
-         basisSVNorms[i] = basisNorms[i]/basisSvals[i];
+         basisSVNorms[i] = fabs(basisSvals[i])!=0?basisNorms[i]/basisSvals[i]:0;
       }
 
       if (lockedEvals && numLocked) for (i=0; i<*numLocked; i++) {
          lockedSvals[i] = sqrt(fabs(lockedEvals[i]));
-         lockedSVNorms[i] = lockedNorms[i]/lockedSvals[i];
+         lockedSVNorms[i] = fabs(lockedSvals[i])!=0?lockedNorms[i]/lockedSvals[i]:0;
       }
    }
    else if (primme_svds->method == primme_svds_op_augmented) {
@@ -1489,13 +1489,13 @@ static void monitor_stage1(void *basisEvals_, int *basisSize, int *basisFlags,
    int i, j=0;
    if (lockedEvals && numLocked) for (i=0; i<*numLocked; i++, j++) {
       basisSvals[j] = sqrt(fabs(lockedEvals[i]));
-      basisSVNorms[j] = lockedNorms[i]/basisSvals[i];
+      basisSVNorms[j] = fabs(basisSvals[i])!=0?lockedNorms[i]/basisSvals[i]:0;
       basisSVFlags[j] = lockedFlags[i];
    }
 
    if (basisEvals && basisSize) for (i=0; i<*basisSize; i++, j++) {
       basisSvals[j] = sqrt(fabs(basisEvals[i]));
-      basisSVNorms[j] = basisNorms[i]/basisSvals[i];
+      basisSVNorms[j] = fabs(basisSvals[i])!=0?basisNorms[i]/basisSvals[i]:0;
       basisSVFlags[j] = basisFlags ? basisFlags[i] : UNCONVERGED;
    }
 
